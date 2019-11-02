@@ -1,35 +1,74 @@
 import express from "express";
-import EventRecord from "./data/model/eventRecord";
-import User from "./data/dto/user";
 import Event from './data/dto/event';
+import User from './data/dto/user';
 import EventRepository from './data/eventRepository';
+import { plainToClass } from 'class-transformer';
+import { validate, ValidationError, ValidatorOptions } from 'class-validator';
+import validator from 'validator';
 
-const app = express();
 const port = 3000;
 
-// app.get("/", (req: express.Request, res: express.Response) => {
-//   res.send("hello world!");
-// });
+const validatorOptions : ValidatorOptions = {
+  forbidUnknownValues: true,
+  forbidNonWhitelisted: true,
+  whitelist: true,
+};
 
-// app.listen(port, () => {
-//   console.log(`Listening at http://localhost:${port}`);
-// });
+const app = express();
+app.use(express.json());
 
-let repo = new EventRepository();
+const repo = new EventRepository();
 
-let e1 = new Event("type1");
-let e2 = new Event("type2");
+app.post('/users', (req: express.Request, res: express.Response) => {
+  let user: User = plainToClass(User, req.body);
 
-repo.add("foo@bar", e1);
-repo.add("foo@bar", e2);
-repo.add("baz@qux", e1);
+  validate(user, validatorOptions).then((errors: ValidationError[]) => {
+    if (errors.length > 0) {
+      return res.status(400).json({ message: 'POST body failed validation', errors });
+    }
 
-let twodaysago = new Date();
-twodaysago.setDate(twodaysago.getDate() - 1);
-repo.add("baz@qux", e2, twodaysago)
+    // NOOP
+    return res.status(201).end();
+  })
+});
 
-// console.log(repo.get());
+app.get('/events', (req: express.Request, res: express.Response) => {
+  if (req.query.last24Hours) {
+    return res.send(repo.getLast24Hours());
+  }
 
-// console.log(repo.get("foo@bar"))
+  return res.send(repo.get());
+});
 
-console.log(repo.getLast24Hours());
+app.get('/events/:email', (req: express.Request, res: express.Response) => {
+  let { email } = req.params;
+
+  if (!validator.isEmail(email)) {
+    return res.status(400).end(`invalid email: '${email}'`);
+  }
+  
+  return res.send(repo.get(email));
+})
+
+app.post('/events/:email', (req: express.Request, res: express.Response) => {
+  let { email } = req.params;
+
+  if (!validator.isEmail(email)) {
+    return res.status(400).end(`invalid email: '${email}'`);
+  }
+
+  let event: Event = plainToClass(Event, req.body);
+
+  validate(event, validatorOptions).then((errors: ValidationError[]) => {
+    if (errors.length > 0) {
+      return res.status(400).json({ message: 'POST body failed validation', errors });
+    }
+
+    repo.add(req.params.email, event);
+    return res.status(201).end();
+  });
+})
+
+app.listen(port, () => {
+  console.log(`Listening at http://localhost:${port}`);
+});
