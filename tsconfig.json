@@ -5,7 +5,8 @@
     "noImplicitAny": true,
     "module": "commonjs",
     "outDir": "dist",
-    "sourceMap": true
+    "sourceMap": true,
+    "experimentalDecorators": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
