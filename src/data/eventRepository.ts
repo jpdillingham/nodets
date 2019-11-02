@@ -13,10 +13,11 @@ class EventRepository {
   }
 
   public get(): EventRecord[];
+  public get(email: string): EventRecord[];
   public get(email?: string): EventRecord[] {
     if (email) {
-      return this.events[email].map(record => 
-        new EventRecord(record.type, record.created, email));
+      return this.events[email] || [].map(record => 
+        new EventRecord(record.type, record.created));
     }
 
     return Object.entries(this.events).reduce((acc, [email, records]) =>
@@ -24,7 +25,7 @@ class EventRepository {
           new EventRecord(record.type, record.created, email))), []);
   }
 
-  public getLast24Hours(): any[] {
+  public getLast24Hours(): EventRecord[] {
     let yesterday = new Date();
     yesterday.setTime(yesterday.getTime() - (60*60*24*1000));
 
