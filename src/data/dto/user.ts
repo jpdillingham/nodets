@@ -1,10 +1,10 @@
-import { IsString, Matches } from 'class-validator';
+import { IsString, Matches, IsOptional } from 'class-validator';
 
 class User {
-    constructor(email: string, password: string, phoneNumber?: string) {
+    constructor(email: string, password: string, phone?: string) {
         this.email = email;
         this.password = password;
-        this.phoneNumber = phoneNumber;
+        this.phone = phone;
     }
 
     @IsString()
@@ -13,8 +13,9 @@ class User {
     @IsString()
     public readonly password: string;
 
-    @Matches(new RegExp('^\d{3}-\d{3}-\d{4}$'))
-    public readonly phoneNumber?: string;
+    @IsOptional()
+    @Matches(/^\d{3}-\d{3}-\d{4}$/i)
+    public readonly phone?: string;
 }
 
 export default User;
